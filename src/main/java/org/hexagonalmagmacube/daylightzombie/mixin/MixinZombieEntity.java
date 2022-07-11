@@ -42,7 +42,7 @@ public abstract class MixinZombieEntity extends HostileEntity {
     @Inject(method = "initCustomGoals()V", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/ai/goal/GoalSelector;add(ILnet/minecraft/entity/ai/goal/Goal;)V",
             ordinal = 4), cancellable = true)
     protected void onInitCustomGoals(CallbackInfo ci) {
-        // Mixin-Maintenance: This method was last updated for version 1.18.2 where
+        // Mixin-Maintenance: This method was last updated for version 1.18.2 where the vanilla source was:
         //  this.goalSelector.add(2, new ZombieAttackGoal( (ZombieEntity)this, 1.0D, false));
         //  this.goalSelector.add(6, new MoveThroughVillageGoal(this, 1.0D, true, 4, this::canBreakDoors));
         //  this.goalSelector.add(7, new WanderAroundFarGoal(this, 1.0D));
@@ -57,39 +57,47 @@ public abstract class MixinZombieEntity extends HostileEntity {
         ci.cancel();
     }
 
-//    @Inject(method = "initCustomGoals", at = @At("RETURN"))
-//    protected void onInitCustomGoals(CallbackInfo ci) {
-//    for (PrioritizedGoal goal : this.targetSelector.getGoals()) {
-//        int i = 0;
-//        ActiveTargetGoal<LivingEntity> targetGoal = (ActiveTargetGoal<LivingEntity>) goal.getGoal();
-//        if (targetGoal != null) {
-//            PeacefulDaylightZombiesMod.LOGGER.info("Removing a goal with priority %d", goal.getPriority());
-//            this.targetSelector.remove(goal);
-//        }
-//
-//        this.targetSelector.add(2, new MixinZombieEntity.TargetGoal(this, PlayerEntity.class));
-//    }
-
     private static class TargetGoal<T extends LivingEntity> extends ActiveTargetGoal<T> {
         public TargetGoal(MixinZombieEntity zombie, Class<T> targetEntityClass) {
             super(zombie, targetEntityClass, true);
         }
 
+        // Assume an entity is above ground if it is above this block level
+        private static int NumberTicksBetweenChecks = 40;
+
         private int i = 0;
         public boolean canStart() {
+            // First evaluate
+            if (!super.canStart())
+            {
+                return false;
+            }
+
+            // Considered evaluating these conditions every N clock ticks to avoid server lag.
+            // However, super.canStart() already contains a randomizer to skip some
+//            i++;
+//            if (i%NumberTicksBetweenChecks != 0) {
+//                return false;
+//            }
+//            i = 0;
+
             // TODO: Should we try to use this.mob.getEyeLocation().getBlock().getType() != Cave Air instead
             boolean isAboveGround = (this.mob.getY() > GroundLevelThreshold);
-            if (!isAboveGround) {return super.canStart();}
+            if (!isAboveGround) { return true; }
             boolean isBrightEnough = (this.mob.getBrightnessAtEyes() > CalmingBrightnessThreshold);
 
-//            i++;
-//            if (i%100 == 0) {
-//                PeacefulDaylightZombiesMod.LOGGER.info(String.format("Y-level: %.2f; Brightness: %.2f; bright Enough: %b",
-//                        this.mob.getY(), this.mob.getBrightnessAtEyes(), isBrightEnough));
-//               i = 0;
-//            }
+//            PeacefulDaylightZombiesMod.LOGGER.info(String.format("Y-level: %.2f; Brightness: %.2f; bright Enough: %b",
+//                    this.mob.getY(), this.mob.getBrightnessAtEyes(), isBrightEnough));
 
-            return (isAboveGround && isBrightEnough) ? false : super.canStart();
+            if (isBrightEnough) {
+                this.targetEntity = null;
+                return false;
+            }
+            if (this.targetEntity != null) {  // null check, just in case
+                PeacefulDaylightZombiesMod.LOGGER.info(String.format(
+                        "Zombie has targeted a %s", this.targetEntity.getClass().getSimpleName()));
+            }
+            return true;
         }
     }
 }
