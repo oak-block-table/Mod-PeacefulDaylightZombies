@@ -27,8 +27,13 @@ public abstract class MixinSkeletonEntity extends AbstractSkeletonEntity {
 //    @Overwrite
     protected void initEquipment(Random random, LocalDifficulty localDifficulty) {
         super.initEquipment(random, localDifficulty);
-        PeacefulDaylightZombiesMod.LOGGER.info("Trade the bow for a sword.");
-        this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
-        this.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+        int randomInt = random.nextBetween(1, 3);
+        if (randomInt == 1) { // 1 in 3 chance of special event
+            PeacefulDaylightZombiesMod.LOGGER.info("Trade the bow for a sword.");
+            this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
+            this.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+        } else {
+            PeacefulDaylightZombiesMod.LOGGER.info(String.format("Random case #%1d Standard skeleton.",randomInt));
+        }
     }
 }

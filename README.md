@@ -1,4 +1,4 @@
-# Pleaceful Daylight Zombies
+# Peaceful Daylight Zombies
 
 ## Purpose
 
